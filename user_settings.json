@@ -1,1 +1,12 @@
-{"primary_api_key": "", "secondary_api_key": "", "email": "aadityakalmekh@77@gmail.com", "full_name": "aadi", "roll_number": "89", "prn": "89565", "college": "Vishwakarma Institute of Technology", "year": "Year II", "branch_division": "CSSE-B", "browser": "Edge"}
+{
+  "openrouter_api_key": "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",
+  "email": "aaditya.kalmekh24@vit.edu",
+  "full_name": "Aaditya Rakesh Kalmekh",
+  "roll_number": "11",
+  "prn": "12411536",
+  "college": "Vishwakarma Institute of Technology",
+  "year": "Year II",
+  "branch_division": "CSSE-B",
+  "browser": "Edge",
+  "auto_submit": false
+}

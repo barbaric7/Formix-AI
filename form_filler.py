@@ -85,7 +85,7 @@ def submit_form(driver):
         
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
         time.sleep(1)
-        # driver.execute_script("arguments[0].click();", submit_button)
+        driver.execute_script("arguments[0].click();", submit_button)
         print("✅ Form Submitted Successfully!")
         time.sleep(3)
     except Exception as e:

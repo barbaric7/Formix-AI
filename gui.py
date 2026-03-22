@@ -182,8 +182,8 @@ class FormAutomationApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("AutoForm AI")
-        self.geometry("700x820")
-        self.resizable(False, False)
+        self.geometry("700x650") # Reduced height to fit laptops perfectly
+        self.resizable(True, True) # Allows you to drag the corners and resize!
         self.configure(fg_color=COLORS["bg_root"])
 
         self.settings_file = "user_settings.json"
@@ -275,6 +275,21 @@ class FormAutomationApp(ctk.CTk):
         make_label(url_inner, "GOOGLE FORM URL").pack(anchor="w")
         self.form_link_input = make_entry(url_inner, placeholder="https://docs.google.com/forms/d/...", height=42)
         self.form_link_input.pack(fill="x", pady=(4, 0))
+
+        # --- NEW: AUTO-SUBMIT CHECKBOX ---
+        self.auto_submit_var = ctk.BooleanVar(value=self.user_data.get("auto_submit", False))
+        self.auto_submit_cb = ctk.CTkCheckBox(
+            url_inner,
+            text="Auto-Submit form when finished",
+            variable=self.auto_submit_var,
+            font=ctk.CTkFont(family=FONT["family_ui"], size=12, weight="bold"),
+            text_color=COLORS["text_primary"],
+            fg_color=COLORS["accent"],
+            hover_color=COLORS["accent_hover"],
+            border_color=COLORS["border"],
+            corner_radius=4
+        )
+        self.auto_submit_cb.pack(anchor="w", pady=(14, 0))
 
         # ── Action Buttons ─────────────────────
         btn_inner = make_card(scroll, title="Actions", icon="◈")
@@ -389,16 +404,13 @@ class FormAutomationApp(ctk.CTk):
 
         self.browser_input = labeled_field(
             ai_inner, "PREFERRED BROWSER",
-            lambda p: make_combo(p, ["Chrome", "Edge"], default=self.user_data.get("browser", "Chrome")),
+            lambda p: make_combo(p, ["Edge"], default=self.user_data.get("browser", "Edge")),
         )
-        self.primary_api_input = labeled_field(
-            ai_inner, "PRIMARY API KEY  (OpenRouter / GPT)",
-            lambda p: make_entry(p, placeholder="sk-or-v1-...", show="*", default=self.user_data.get("primary_api_key", "")),
-            pady_top=14,
-        )
-        self.secondary_api_input = labeled_field(
-            ai_inner, "SECONDARY API KEY  (Llama / Claude)",
-            lambda p: make_entry(p, placeholder="sk-or-v1-...", show="*", default=self.user_data.get("secondary_api_key", "")),
+        
+        # --- UPDATED: SINGLE API KEY INPUT ---
+        self.openrouter_api_input = labeled_field(
+            ai_inner, "OPENROUTER API KEY",
+            lambda p: make_entry(p, placeholder="sk-or-v1-...", show="*", default=self.user_data.get("openrouter_api_key", "")),
             pady_top=14,
         )
 
@@ -496,8 +508,7 @@ class FormAutomationApp(ctk.CTk):
 
     def save_settings(self):
         data = {
-            "primary_api_key":  self.primary_api_input.get(),
-            "secondary_api_key": self.secondary_api_input.get(),
+            "openrouter_api_key": self.openrouter_api_input.get(), # --- SINGLE KEY ---
             "email":            self.email_input.get(),
             "full_name":        self.name_input.get(),
             "roll_number":      self.roll_input.get(),
@@ -506,6 +517,7 @@ class FormAutomationApp(ctk.CTk):
             "year":             self.year_input.get(),
             "branch_division":  self.branch_input.get(),
             "browser":          self.browser_input.get(),
+            "auto_submit":      self.auto_submit_var.get(), # --- AUTO-SUBMIT STATE ---
         }
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
@@ -552,7 +564,11 @@ class FormAutomationApp(ctk.CTk):
         if not self.user_data:
             print("❌  Please save your profile first.\n")
             return
+            
+        # --- PASS DYNAMIC STATES ---
         self.user_data["form_url"] = form_url
+        self.user_data["auto_submit"] = self.auto_submit_var.get()
+        
         self.start_btn.configure(state="disabled", text="Running…")
         self._set_status("● Running", COLORS["accent"])
         self.log_textbox.configure(state="normal")
