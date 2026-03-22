@@ -1,8 +1,7 @@
 import time
 from selenium.webdriver.common.by import By
-from config import STUDENT_DETAILS
 
-def fill_student_details(driver):
+def fill_student_details(driver, user_data):
     blocks = driver.find_elements(By.XPATH, "//div[@role='listitem']")
 
     for block in blocks:
@@ -20,17 +19,18 @@ def fill_student_details(driver):
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", input_box)
                 input_box.clear()
                 
+                # Use user_data from GUI instead of config
                 if "email" in text:
-                    input_box.send_keys(STUDENT_DETAILS["email"])
+                    input_box.send_keys(user_data["email"])
                     print("Filled Email")
                 elif "full name" in text:
-                    input_box.send_keys(STUDENT_DETAILS["full name"])
+                    input_box.send_keys(user_data["full_name"])
                     print("Filled Full Name")
                 elif "roll number" in text:
-                    input_box.send_keys(STUDENT_DETAILS["roll number"])
+                    input_box.send_keys(user_data["roll_number"])
                     print("Filled Roll Number")
                 elif "prn" in text:
-                    input_box.send_keys(STUDENT_DETAILS["prn"])
+                    input_box.send_keys(user_data["prn"])
                     print("Filled PRN")
                 
                 time.sleep(1)
@@ -42,13 +42,13 @@ def fill_student_details(driver):
                 time.sleep(1)
 
                 if "college name" in text:
-                    target_val = STUDENT_DETAILS['college']
+                    target_val = user_data['college']
                     print("Selected College")
                 elif "year-mandatory" in text or "year" in text:
-                    target_val = STUDENT_DETAILS['year']
+                    target_val = user_data['year']
                     print("Selected Year")
                 elif "branch-division" in text:
-                    target_val = STUDENT_DETAILS['branch-division']
+                    target_val = user_data['branch_division']
                     print("Selected Branch-Division")
 
                 option = driver.find_element(
@@ -59,6 +59,8 @@ def fill_student_details(driver):
 
         except:
             continue
+
+# ... (Keep your existing click_option and submit_form functions here below) ...
 
 def click_option(driver, final_answer, options, elements):
     clean_answer = final_answer.strip().lower().replace(".", "")

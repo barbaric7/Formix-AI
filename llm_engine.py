@@ -1,10 +1,8 @@
 import requests
-from config import OPENROUTER_API_KEY
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-
-def ask_model(model, question, options):
+def ask_model(model, question, options, api_key):
     prompt = f"""
 You are solving a multiple choice question.
 
@@ -25,7 +23,7 @@ Return only the exact option text.
     response = requests.post(
         API_URL,
         headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
         json={
