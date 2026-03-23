@@ -15,7 +15,7 @@ Formix AI is an automated desktop application engineered to programmatically nav
 
 A pre-compiled executable is provided for users who do not have a Python environment configured.
 
-1. Navigate to the **Releases** section of this repository and download `AutoForm AI.exe`.
+1. Navigate to the **Releases** section of this repository and download `Formix AI.exe`.
 2. Execute the application.
    *(Note: Windows Defender or SmartScreen may flag the executable as unrecognized. Select "More Info" and "Run Anyway" to proceed.)*
 3. Proceed to the Configuration and Usage Guide below.
@@ -57,7 +57,7 @@ Initial configuration is required to establish the automation profile and bypass
 1. Register a free account at https://openrouter.ai
 2. Navigate to the API Keys section and generate a new key
    *(Typically starts with `sk-or-v1-`)*
-3. Launch AutoForm AI and open the Profile tab
+3. Launch Formix AI and open the Profile tab
 4. Input your OpenRouter API key into the designated field
 5. Populate your required institutional details:
 
