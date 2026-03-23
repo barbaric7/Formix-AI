@@ -182,7 +182,8 @@ class FormAutomationApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("AutoForm AI")
-        self.geometry("700x650") 
+        self.geometry("780x820")
+        self.minsize(700, 750)
         self.resizable(True, True) 
         self.configure(fg_color=COLORS["bg_root"])
 
@@ -194,7 +195,14 @@ class FormAutomationApp(ctk.CTk):
 
         if not self.user_data:
             self.tabview.set("Profile")
+            # Hide Dashboard tab on first run — revealed after profile is saved
+            try:
+                self.tabview._segmented_button.configure(state="disabled")
+            except Exception:
+                pass
+            self._dashboard_locked = True
         else:
+            self._dashboard_locked = False
             self.tabview.set("Dashboard")
 
     # ── TITLE BAR ──────────────────────────────
@@ -389,6 +397,53 @@ class FormAutomationApp(ctk.CTk):
         sys.stdout = TextRedirector(self.log_textbox, self)
 
     # ══════════════════════════════════════════
+    #  TOOLTIP HELPER
+    # ══════════════════════════════════════════
+    def _make_tooltip(self, widget, text, url=None):
+        """Attach a hover tooltip to widget. If url given, clicking opens it."""
+        import webbrowser
+        tip_win = None
+
+        def show(event):
+            nonlocal tip_win
+            if tip_win:
+                return
+            x = widget.winfo_rootx() + 24
+            y = widget.winfo_rooty() + 24
+            tip_win = ctk.CTkToplevel(self)
+            tip_win.wm_overrideredirect(True)
+            tip_win.wm_geometry(f"+{x}+{y}")
+            tip_win.configure(fg_color=COLORS["bg_card"])
+            frame = ctk.CTkFrame(tip_win, fg_color=COLORS["bg_card"],
+                                 border_width=1, border_color=COLORS["accent"], corner_radius=7)
+            frame.pack(fill="both", expand=True)
+            ctk.CTkLabel(
+                frame, text=text,
+                font=ctk.CTkFont(family=FONT["family_ui"], size=11),
+                text_color=COLORS["text_primary"],
+                wraplength=260, justify="left", padx=10, pady=8,
+            ).pack()
+            if url:
+                link = ctk.CTkLabel(
+                    frame,
+                    text="📖  View step-by-step guide →",
+                    font=ctk.CTkFont(family=FONT["family_ui"], size=11, underline=True),
+                    text_color=COLORS["accent"],
+                    cursor="hand2", padx=10, pady=(0, 8),
+                )
+                link.pack()
+                link.bind("<Button-1>", lambda e: webbrowser.open(url))
+
+        def hide(event):
+            nonlocal tip_win
+            if tip_win:
+                tip_win.destroy()
+                tip_win = None
+
+        widget.bind("<Enter>", show)
+        widget.bind("<Leave>", hide)
+
+    # ══════════════════════════════════════════
     #  PROFILE TAB
     # ══════════════════════════════════════════
     def _build_profile(self, tab):
@@ -404,25 +459,80 @@ class FormAutomationApp(ctk.CTk):
             ai_inner, "PREFERRED BROWSER",
             lambda p: make_combo(p, ["Edge"], default=self.user_data.get("browser", "Edge")),
         )
-        
-        self.openrouter_api_input = labeled_field(
-            ai_inner, "OPENROUTER API KEY",
-            lambda p: make_entry(p, placeholder="sk-or-v1-...", show="*", default=self.user_data.get("openrouter_api_key", "")),
-            pady_top=14,
+
+        # --- API Key label row with (?) tooltip ---
+        api_label_row = ctk.CTkFrame(ai_inner, fg_color="transparent")
+        api_label_row.pack(fill="x", pady=(14, 3))
+
+        make_label(api_label_row, "OPENROUTER API KEY  *").pack(side="left", anchor="w")
+
+        tooltip_btn = ctk.CTkLabel(
+            api_label_row,
+            text=" ? ",
+            font=ctk.CTkFont(family=FONT["family_ui"], size=10, weight="bold"),
+            text_color=COLORS["accent"],
+            fg_color=COLORS["accent_dim"],
+            corner_radius=8,
+            padx=5, pady=1,
+            cursor="hand2",
         )
+        tooltip_btn.pack(side="left", padx=(4, 0))
+        self._make_tooltip(
+            tooltip_btn,
+            "Your OpenRouter API key is needed to access AI models.\n\n"
+            "1. Go to openrouter.ai\n"
+            "2. Sign in / create a free account\n"
+            "3. Navigate to Keys → Create Key\n"
+            "4. Copy the key starting with  sk-or-v1-",
+            url="https://github.com/Om-Kasar/AutoFormAI#getting-your-openrouter-api-key",
+        )
+
+        # --- API key entry with eye/peek toggle ---
+        api_row = ctk.CTkFrame(ai_inner, fg_color="transparent")
+        api_row.pack(fill="x")
+        api_row.columnconfigure(0, weight=1)
+
+        self.openrouter_api_input = make_entry(
+            api_row,
+            placeholder="sk-or-v1-...",
+            show="●",
+            default=self.user_data.get("openrouter_api_key", ""),
+        )
+        self.openrouter_api_input.grid(row=0, column=0, sticky="ew")
+
+        self._api_visible = False
+
+        def toggle_api_visibility():
+            self._api_visible = not self._api_visible
+            self.openrouter_api_input.configure(show="" if self._api_visible else "●")
+            eye_btn.configure(text="🔒" if self._api_visible else "👁")
+
+        eye_btn = ctk.CTkButton(
+            api_row,
+            text="👁",
+            width=42,
+            height=38,
+            command=toggle_api_visibility,
+            fg_color=COLORS["bg_input"],
+            hover_color=COLORS["border"],
+            border_width=1,
+            border_color=COLORS["border"],
+            text_color=COLORS["text_secondary"],
+            corner_radius=7,
+            font=ctk.CTkFont(size=15),
+        )
+        eye_btn.grid(row=0, column=1, padx=(6, 0))
 
         # ── Personal Details ───────────────────
         per_inner = make_card(scroll, title="Personal Details", icon="⬡")
 
-        self.email_input = labeled_field(
-            per_inner, "EMAIL ADDRESS",
-            lambda p: make_entry(p, placeholder="student@college.edu", default=self.user_data.get("email", "")),
-        )
-        self.name_input = labeled_field(
-            per_inner, "FULL NAME",
-            lambda p: make_entry(p, default=self.user_data.get("full_name", "")),
-            pady_top=14,
-        )
+        make_label(per_inner, "EMAIL ADDRESS  *").pack(anchor="w", pady=(10, 3))
+        self.email_input = make_entry(per_inner, placeholder="student@college.edu", default=self.user_data.get("email", ""))
+        self.email_input.pack(fill="x")
+
+        make_label(per_inner, "FULL NAME  *").pack(anchor="w", pady=(14, 3))
+        self.name_input = make_entry(per_inner, default=self.user_data.get("full_name", ""))
+        self.name_input.pack(fill="x")
 
         make_divider(per_inner)
 
@@ -433,18 +543,18 @@ class FormAutomationApp(ctk.CTk):
 
         lf_roll = ctk.CTkFrame(row_a, fg_color="transparent")
         lf_roll.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        make_label(lf_roll, "ROLL NUMBER").pack(anchor="w", pady=(0, 3))
+        make_label(lf_roll, "ROLL NUMBER  *").pack(anchor="w", pady=(0, 3))
         self.roll_input = make_entry(lf_roll, default=self.user_data.get("roll_number", ""))
         self.roll_input.pack(fill="x")
 
         lf_prn = ctk.CTkFrame(row_a, fg_color="transparent")
         lf_prn.grid(row=0, column=1, sticky="ew", padx=(8, 0))
-        make_label(lf_prn, "PRN").pack(anchor="w", pady=(0, 3))
+        make_label(lf_prn, "PRN  *").pack(anchor="w", pady=(0, 3))
         self.prn_input = make_entry(lf_prn, default=self.user_data.get("prn", ""))
         self.prn_input.pack(fill="x")
 
         self.college_input = labeled_field(
-            per_inner, "COLLEGE NAME",
+            per_inner, "COLLEGE NAME  *",
             lambda p: make_entry(p, default=self.user_data.get("college", "Vishwakarma Institute of Technology")),
             pady_top=14,
         )
@@ -476,6 +586,14 @@ class FormAutomationApp(ctk.CTk):
         self.branch_input = make_combo(lf_branch, branch_options, default=self.user_data.get("branch_division", "CSSE-B"))
         self.branch_input.pack(fill="x")
 
+        # ── Required fields notice ─────────────
+        ctk.CTkLabel(
+            scroll,
+            text="  * Required fields",
+            font=ctk.CTkFont(family=FONT["family_ui"], size=10),
+            text_color=COLORS["text_muted"],
+        ).pack(anchor="w", padx=4, pady=(0, 4))
+
         # ── Save Button ────────────────────────
         save_wrap = ctk.CTkFrame(scroll, fg_color="transparent")
         save_wrap.pack(fill="x", pady=(4, 6), padx=2)
@@ -502,8 +620,30 @@ class FormAutomationApp(ctk.CTk):
         return {}
 
     def save_settings(self):
+        # ── Required field validation ──────────
+        required = {
+            "OpenRouter API Key": self.openrouter_api_input.get().strip(),
+            "Email Address":      self.email_input.get().strip(),
+            "Full Name":          self.name_input.get().strip(),
+            "Roll Number":        self.roll_input.get().strip(),
+            "PRN":                self.prn_input.get().strip(),
+            "College Name":       self.college_input.get().strip(),
+        }
+        missing = [k for k, v in required.items() if not v]
+        if missing:
+            # Flash save button red and show which fields are missing
+            self.save_btn.configure(
+                fg_color=COLORS["danger"],
+                text=f"⚠  Fill required: {', '.join(missing[:2])}{'…' if len(missing) > 2 else ''}",
+            )
+            self.after(3000, lambda: self.save_btn.configure(
+                fg_color=COLORS["accent"], text="Save Profile"
+            ))
+            self._set_status("● Missing fields", COLORS["danger"])
+            return
+
         data = {
-            "openrouter_api_key": self.openrouter_api_input.get(), 
+            "openrouter_api_key": self.openrouter_api_input.get(),
             "email":            self.email_input.get(),
             "full_name":        self.name_input.get(),
             "roll_number":      self.roll_input.get(),
@@ -512,11 +652,20 @@ class FormAutomationApp(ctk.CTk):
             "year":             self.year_input.get(),
             "branch_division":  self.branch_input.get(),
             "browser":          self.browser_input.get(),
-            "auto_submit":      self.auto_submit_var.get(), 
+            "auto_submit":      self.auto_submit_var.get(),
         }
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
         self.user_data = data
+
+        # ── Unlock Dashboard tab if this was first-time setup ──
+        if getattr(self, "_dashboard_locked", False):
+            try:
+                self.tabview._segmented_button.configure(state="normal")
+            except Exception:
+                pass
+            self._dashboard_locked = False
+
         self.tabview.set("Dashboard")
         self._set_status("● Profile saved", COLORS["success"])
         print("✅  Profile saved successfully.\n")
